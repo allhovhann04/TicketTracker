@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using TicketTracker.Api.Data;
 using TicketTracker.Api.Options;
 using TicketTracker.Api.Services.Auth;
+using TicketTracker.Api.Services.Epics;
+using TicketTracker.Api.Services.Teams;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +28,8 @@ builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<IEpicService, EpicService>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration section is missing.");
@@ -45,12 +49,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Any endpoint without [AllowAnonymous] requires a valid JWT by default,
-// so future Team/Epic/Ticket controllers are protected without extra wiring.
+// Any endpoint without [AllowAnonymous] requires a valid JWT from a verified user by default,
+// so future Epic/Ticket controllers are protected without extra wiring.
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
+        .RequireClaim("email_verified", "true")
         .Build();
 });
 

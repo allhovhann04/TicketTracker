@@ -25,7 +25,8 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("email_verified", user.IsEmailVerified ? "true" : "false")
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
