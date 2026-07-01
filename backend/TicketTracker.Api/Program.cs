@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using TicketTracker.Api.Options;
 using TicketTracker.Api.Services.Auth;
 using TicketTracker.Api.Services.Epics;
 using TicketTracker.Api.Services.Teams;
+using TicketTracker.Api.Services.Tickets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +17,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialize enums as strings by default (e.g. TicketType). TicketState overrides this
+        // via its own [JsonConverter] to use the exact workflow tokens required by the spec.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -30,6 +38,7 @@ builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IEpicService, EpicService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration section is missing.");
@@ -37,6 +46,9 @@ var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Keep claim types exactly as issued (e.g. "sub", not the remapped ClaimTypes.NameIdentifier URI)
+        // so claim lookups elsewhere in the app match what JwtTokenGenerator actually put in the token.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
