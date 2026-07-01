@@ -47,7 +47,8 @@ button:disabled {
   cursor: not-allowed;
 }
 
-input {
+input,
+select {
   font: inherit;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -167,4 +168,9 @@ input {
 
 .empty-state {
   color: var(--text-muted);
+}
+
+.team-selector {
+  max-width: 320px;
+  margin-bottom: 20px;
 }
