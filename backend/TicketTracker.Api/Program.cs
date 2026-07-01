@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using TicketTracker.Api.Data;
 using TicketTracker.Api.Options;
 using TicketTracker.Api.Services.Auth;
+using TicketTracker.Api.Services.Comments;
 using TicketTracker.Api.Services.Epics;
 using TicketTracker.Api.Services.Teams;
 using TicketTracker.Api.Services.Tickets;
@@ -39,6 +40,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IEpicService, EpicService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration section is missing.");
