@@ -15,9 +15,9 @@ public class EpicConfiguration : IEntityTypeConfiguration<Epic>
             .HasColumnType("citext")
             .IsRequired();
 
-        // Epic title must be unique per team, case-insensitively.
-        builder.HasIndex(e => new { e.TeamId, e.Title })
-            .IsUnique();
+        // Not unique: the specification only requires a non-empty trimmed title, not
+        // uniqueness. Kept as a plain index since Tickets/ListAsync filters by TeamId.
+        builder.HasIndex(e => e.TeamId);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("now()");

@@ -6,6 +6,5 @@ public enum EpicErrorCode
     NotFound,
     TeamNotFound,
     InvalidTitle,
-    TitleAlreadyExistsInTeam,
     HasDependentTickets
 }

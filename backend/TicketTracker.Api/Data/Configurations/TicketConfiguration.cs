@@ -15,7 +15,7 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
             .IsRequired();
 
         builder.Property(t => t.Type)
-            .HasConversion<string>()
+            .HasConversion(new TicketTypeConverter())
             .HasMaxLength(32)
             .IsRequired();
 

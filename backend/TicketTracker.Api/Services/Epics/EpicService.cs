@@ -28,13 +28,6 @@ public class EpicService : IEpicService
             return EpicResult<EpicResponse>.Fail(EpicErrorCode.InvalidTitle, "Epic title must not be empty.");
         }
 
-        var titleExists = await _db.Epics.AnyAsync(
-            e => e.TeamId == request.TeamId && e.Title == title, cancellationToken);
-        if (titleExists)
-        {
-            return EpicResult<EpicResponse>.Fail(EpicErrorCode.TitleAlreadyExistsInTeam, "An epic with this title already exists in this team.");
-        }
-
         var now = DateTimeOffset.UtcNow;
         var epic = new Epic
         {
@@ -97,13 +90,6 @@ public class EpicService : IEpicService
         if (title.Length == 0)
         {
             return EpicResult<EpicResponse>.Fail(EpicErrorCode.InvalidTitle, "Epic title must not be empty.");
-        }
-
-        var titleExists = await _db.Epics.AnyAsync(
-            e => e.Id != id && e.TeamId == epic.TeamId && e.Title == title, cancellationToken);
-        if (titleExists)
-        {
-            return EpicResult<EpicResponse>.Fail(EpicErrorCode.TitleAlreadyExistsInTeam, "An epic with this title already exists in this team.");
         }
 
         epic.Title = title;

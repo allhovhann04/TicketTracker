@@ -79,7 +79,6 @@ public class EpicsController : ControllerBase
             EpicErrorCode.NotFound => StatusCodes.Status404NotFound,
             EpicErrorCode.TeamNotFound => StatusCodes.Status400BadRequest,
             EpicErrorCode.InvalidTitle => StatusCodes.Status400BadRequest,
-            EpicErrorCode.TitleAlreadyExistsInTeam => StatusCodes.Status409Conflict,
             EpicErrorCode.HasDependentTickets => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
         };

@@ -157,8 +157,9 @@ public class TicketService : ITicketService
             return TicketResult<TicketResponse>.Fail(TicketErrorCode.TeamNotFound, "Team not found.");
         }
 
-        var teamChanged = request.TeamId != ticket.TeamId;
-        Guid? resolvedEpicId = request.EpicId;
+        // Clearing/replacing the epic when the team changes is the client's responsibility
+        // (per spec); the backend simply rejects any epic that doesn't belong to the ticket's team.
+        var resolvedEpicId = request.EpicId;
 
         if (resolvedEpicId.HasValue)
         {
@@ -170,14 +171,7 @@ public class TicketService : ITicketService
 
             if (epic.TeamId != request.TeamId)
             {
-                if (!teamChanged)
-                {
-                    return TicketResult<TicketResponse>.Fail(TicketErrorCode.EpicNotInTeam, "The epic does not belong to the ticket's team.");
-                }
-
-                // Team is changing and the referenced epic belongs to neither the old nor the
-                // new team: clear it instead of rejecting the whole update.
-                resolvedEpicId = null;
+                return TicketResult<TicketResponse>.Fail(TicketErrorCode.EpicNotInTeam, "The epic does not belong to the ticket's team.");
             }
         }
 

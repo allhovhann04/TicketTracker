@@ -34,12 +34,23 @@ public class TicketsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> List(
         [FromQuery] Guid? teamId,
-        [FromQuery] TicketType? type,
+        [FromQuery] string? type,
         [FromQuery] Guid? epicId,
         [FromQuery] string? state,
         [FromQuery] string? titleSearch,
         CancellationToken cancellationToken)
     {
+        TicketType? parsedType = null;
+        if (!string.IsNullOrEmpty(type))
+        {
+            if (!TicketTypeMapper.TryParse(type, out var typeValue))
+            {
+                return BadRequest(new { message = $"'{type}' is not a valid ticket type." });
+            }
+
+            parsedType = typeValue;
+        }
+
         TicketState? parsedState = null;
         if (!string.IsNullOrEmpty(state))
         {
@@ -51,7 +62,7 @@ public class TicketsController : ControllerBase
             parsedState = stateValue;
         }
 
-        var filter = new TicketListFilter(teamId, type, epicId, parsedState, titleSearch);
+        var filter = new TicketListFilter(teamId, parsedType, epicId, parsedState, titleSearch);
         var tickets = await _ticketService.ListAsync(filter, cancellationToken);
         return Ok(tickets);
     }

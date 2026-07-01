@@ -28,11 +28,13 @@ public class TeamService : ITeamService
             return TeamResult<TeamResponse>.Fail(TeamErrorCode.NameAlreadyExists, "A team with this name already exists.");
         }
 
+        var now = DateTimeOffset.UtcNow;
         var team = new Team
         {
             Id = Guid.NewGuid(),
             Name = name,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
         _db.Teams.Add(team);
@@ -49,7 +51,8 @@ public class TeamService : ITeamService
             {
                 Id = t.Id,
                 Name = t.Name,
-                CreatedAt = t.CreatedAt
+                CreatedAt = t.CreatedAt,
+                UpdatedAt = t.UpdatedAt
             })
             .ToListAsync(cancellationToken);
     }
@@ -85,7 +88,12 @@ public class TeamService : ITeamService
             return TeamResult<TeamResponse>.Fail(TeamErrorCode.NameAlreadyExists, "A team with this name already exists.");
         }
 
-        team.Name = name;
+        if (team.Name != name)
+        {
+            team.Name = name;
+            team.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return TeamResult<TeamResponse>.Ok(ToResponse(team));
@@ -116,6 +124,7 @@ public class TeamService : ITeamService
     {
         Id = team.Id,
         Name = team.Name,
-        CreatedAt = team.CreatedAt
+        CreatedAt = team.CreatedAt,
+        UpdatedAt = team.UpdatedAt
     };
 }
