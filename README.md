@@ -40,11 +40,17 @@ A fresh database starts empty (schema + migration history only) — create teams
 | `DB_USER`, `DB_PASSWORD`, `DB_NAME` | PostgreSQL credentials (used by both the `db` container and the backend's connection string) |
 | `ConnectionStrings__DefaultConnection` | Full Postgres connection string used by the backend (`Host=db;...` — `db` is the Docker Compose service name) |
 | `Jwt__Secret`, `Jwt__Issuer`, `Jwt__Audience`, `Jwt__ExpiryMinutes` | JWT signing configuration — **set a real, random `Jwt__Secret` outside of local demos** |
-| `Smtp__*` | SMTP relay used to send email-verification messages |
+| `Smtp__Host`, `Smtp__Port`, `Smtp__Username`, `Smtp__Password`, `Smtp__FromAddress`, `Smtp__FromName`, `Smtp__UseSsl` | SMTP relay used to send email-verification messages |
 | `App__PublicUrl` | Base URL used to build links inside verification emails — must be reachable from wherever the user reads their email (host-published backend URL, not the internal Docker service name) |
 | `VITE_API_BASE_URL` | The backend URL the frontend calls. Baked into the compiled JS bundle at **build time** (Vite env vars aren't runtime-configurable) — must be a browser-reachable URL, not the internal `backend` service name |
 
-No secrets are committed — `.env` is gitignored, and `.env.example` only contains placeholder values.
+### SMTP configuration
+
+The `Smtp__*` values in `.env.example` are **placeholders** (`smtp.example.com`, empty credentials) — verification emails will fail to send until they're replaced with a real relay's settings. For example, if deploying against a `relay1.dataart.com`-style SMTP relay, set `Smtp__Host=relay1.dataart.com` plus whatever port/credentials that relay requires. Without valid SMTP configuration, registration still succeeds but the verification email is never delivered, so accounts can't be verified through the normal flow.
+
+### Secrets
+
+**Do not commit real secrets.** `.env` is gitignored and must never be committed — only `.env.example`, which contains placeholder values, is tracked. This applies especially to `Jwt__Secret` and `Smtp__Password`.
 
 ## Local development (without Docker)
 
@@ -63,16 +69,22 @@ npm install
 npm run dev
 ```
 
-## Tests
+## Tests and builds
 
-Backend:
+Backend tests:
 ```
 cd backend
 dotnet test
 ```
 
-Frontend:
+Frontend tests:
 ```
 cd frontend
 npm run test
+```
+
+Frontend production build (also runs a TypeScript type-check via `tsc -b`; output goes to `frontend/dist/` — this is the same build Docker runs internally):
+```
+cd frontend
+npm run build
 ```
