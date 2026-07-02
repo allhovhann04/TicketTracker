@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { listEpics } from '../api/epics'
 import { getErrorMessage } from '../api/errors'
 import { createTicket, deleteTicket, updateTicket } from '../api/tickets'
+import { CommentsSection } from './CommentsSection'
 import type { Epic } from '../types/epic'
 import type { Team } from '../types/team'
 import {
@@ -192,6 +193,8 @@ export function TicketFormModal({ mode, ticket, teams, defaultTeamId, onClose, o
             </div>
           </div>
         </form>
+
+        {mode === 'edit' && ticket ? <CommentsSection ticketId={ticket.id} /> : null}
       </div>
     </div>
   )

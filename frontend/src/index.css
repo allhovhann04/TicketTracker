@@ -131,6 +131,10 @@ textarea {
   margin: 0 auto;
 }
 
+.page-wide {
+  max-width: 1400px;
+}
+
 .page-header {
   display: flex;
   align-items: center;
@@ -245,4 +249,123 @@ textarea {
 
 .danger-button {
   background: var(--error);
+}
+
+.comments {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.comments h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment {
+  background: #f8f7fa;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  align-items: flex-start;
+  padding-bottom: 8px;
+}
+
+.kanban-column {
+  background: #f8f7fa;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 240px;
+  flex: 1;
+  transition: outline-color 0.1s ease;
+  outline: 2px dashed transparent;
+  outline-offset: -2px;
+}
+
+.kanban-column.drag-over {
+  outline-color: var(--accent);
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.kanban-column-count {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.kanban-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: grab;
+  text-align: left;
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+.kanban-card-type {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-bottom: 6px;
+}
+
+.kanban-card-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.kanban-card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
 }

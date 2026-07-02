@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { KanbanColumn } from '../../components/KanbanColumn'
 import { TicketFormModal } from '../../components/TicketFormModal'
 import { listEpics } from '../../api/epics'
 import { getErrorMessage } from '../../api/errors'
 import { listTeams } from '../../api/teams'
-import { listTickets } from '../../api/tickets'
+import { listTickets, updateTicket } from '../../api/tickets'
 import type { Epic } from '../../types/epic'
 import type { Team } from '../../types/team'
 import { TICKET_STATES, TICKET_STATE_LABELS, TICKET_TYPES, TICKET_TYPE_LABELS, type Ticket, type TicketState, type TicketType } from '../../types/ticket'
@@ -16,7 +17,6 @@ export function BoardPage() {
   const [filterTeamId, setFilterTeamId] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<TicketType | ''>('')
   const [filterEpicId, setFilterEpicId] = useState('')
-  const [filterState, setFilterState] = useState<TicketState | ''>('')
   const [titleSearchInput, setTitleSearchInput] = useState('')
   const [titleSearch, setTitleSearch] = useState('')
 
@@ -25,6 +25,7 @@ export function BoardPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoadingTickets, setIsLoadingTickets] = useState(false)
   const [ticketsError, setTicketsError] = useState<string | null>(null)
+  const [dragError, setDragError] = useState<string | null>(null)
 
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null)
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
@@ -66,7 +67,9 @@ export function BoardPage() {
       .catch(() => setFilterEpics([]))
   }, [filterTeamId])
 
-  async function loadTickets() {
+  // No "state" filter here on purpose: the five columns already segment tickets
+  // by state, so an additional state filter would just hide whole columns.
+  const loadTickets = useCallback(async () => {
     if (!filterTeamId) {
       setTickets([])
       return
@@ -80,7 +83,6 @@ export function BoardPage() {
         teamId: filterTeamId,
         type: filterType || undefined,
         epicId: filterEpicId || undefined,
-        state: filterState || undefined,
         titleSearch: titleSearch || undefined,
       })
       setTickets(result)
@@ -89,11 +91,65 @@ export function BoardPage() {
     } finally {
       setIsLoadingTickets(false)
     }
-  }
+  }, [filterTeamId, filterType, filterEpicId, titleSearch])
 
   useEffect(() => {
     void loadTickets()
-  }, [filterTeamId, filterType, filterEpicId, filterState, titleSearch])
+  }, [loadTickets])
+
+  const ticketsByState = useMemo(() => {
+    const groups: Record<TicketState, Ticket[]> = {
+      new: [],
+      ready_for_implementation: [],
+      in_progress: [],
+      ready_for_acceptance: [],
+      done: [],
+    }
+
+    for (const ticket of tickets) {
+      groups[ticket.state].push(ticket)
+    }
+
+    for (const state of TICKET_STATES) {
+      groups[state].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    }
+
+    return groups
+  }, [tickets])
+
+  async function handleDropTicket(ticketId: string, newState: TicketState) {
+    const ticket = tickets.find((item) => item.id === ticketId)
+    if (!ticket || ticket.state === newState) {
+      return
+    }
+
+    const previousTicket = ticket
+    setDragError(null)
+
+    // Optimistic update so the card moves immediately; reverted below on failure.
+    setTickets((current) =>
+      current.map((item) =>
+        item.id === ticketId ? { ...item, state: newState, updatedAt: new Date().toISOString() } : item,
+      ),
+    )
+
+    try {
+      const updated = await updateTicket(ticketId, {
+        teamId: ticket.teamId,
+        epicId: ticket.epicId,
+        title: ticket.title,
+        body: ticket.body,
+        type: ticket.type,
+        state: newState,
+      })
+      setTickets((current) => current.map((item) => (item.id === ticketId ? updated : item)))
+    } catch (err) {
+      setTickets((current) => current.map((item) => (item.id === ticketId ? previousTicket : item)))
+      setDragError(
+        getErrorMessage(err, `Failed to move "${ticket.title}" to ${TICKET_STATE_LABELS[newState]}. Reverted.`),
+      )
+    }
+  }
 
   function openCreateModal() {
     setModalMode('create')
@@ -116,7 +172,7 @@ export function BoardPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       <div className="page-header">
         <h1>Board</h1>
         <button type="button" onClick={openCreateModal} disabled={!filterTeamId}>
@@ -169,18 +225,6 @@ export function BoardPage() {
           </label>
 
           <label className="field">
-            <span>State</span>
-            <select value={filterState} onChange={(event) => setFilterState(event.target.value as TicketState | '')}>
-              <option value="">All states</option>
-              {TICKET_STATES.map((value) => (
-                <option key={value} value={value}>
-                  {TICKET_STATE_LABELS[value]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field">
             <span>Search title</span>
             <input
               type="text"
@@ -194,40 +238,21 @@ export function BoardPage() {
 
       {isLoadingTickets ? <p>Loading tickets…</p> : null}
       {ticketsError ? <p className="error-message">{ticketsError}</p> : null}
+      {dragError ? <p className="error-message">{dragError}</p> : null}
 
-      {!isLoadingTickets && !ticketsError && filterTeamId && tickets.length === 0 ? (
-        <p className="empty-state">No tickets match the current filters.</p>
-      ) : null}
-
-      {!isLoadingTickets && !ticketsError && tickets.length > 0 ? (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Type</th>
-              <th>State</th>
-              <th>Epic</th>
-              <th>Modified</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((ticket) => (
-              <tr key={ticket.id}>
-                <td>{ticket.title}</td>
-                <td>{TICKET_TYPE_LABELS[ticket.type]}</td>
-                <td>{TICKET_STATE_LABELS[ticket.state]}</td>
-                <td>{filterEpics.find((epic) => epic.id === ticket.epicId)?.title ?? '—'}</td>
-                <td>{new Date(ticket.updatedAt).toLocaleString()}</td>
-                <td>
-                  <button type="button" onClick={() => openEditModal(ticket)}>
-                    Open
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!isLoadingTickets && !ticketsError && filterTeamId ? (
+        <div className="kanban-board">
+          {TICKET_STATES.map((state) => (
+            <KanbanColumn
+              key={state}
+              state={state}
+              tickets={ticketsByState[state]}
+              epics={filterEpics}
+              onCardClick={openEditModal}
+              onDropTicket={handleDropTicket}
+            />
+          ))}
+        </div>
       ) : null}
 
       {modalMode ? (
