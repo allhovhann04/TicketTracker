@@ -75,6 +75,29 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+// Apply pending EF Core migrations on startup so `docker compose up --build` is the only
+// command needed from a clean checkout - no host-installed dotnet-ef step required. The
+// Postgres container may still be finishing startup even after its healthcheck passes, so
+// retry a few times before giving up.
+using (var migrationScope = app.Services.CreateScope())
+{
+    var db = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    const int maxAttempts = 10;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch when (attempt < maxAttempts)
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
